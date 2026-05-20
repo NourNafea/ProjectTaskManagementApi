@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/azure-sql-edge
+    platform: linux/arm64
+    container_name: sqlserver2022
+    environment:
+      ACCEPT_EULA: "1"
+      MSSQL_SA_PASSWORD: "Admin@12345"
+    ports:
+      - "1433:1433"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: projecttask-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: src/ProjectTaskManagement.API/Dockerfile
+    container_name: projecttask-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ProjectTaskManagementDb;User Id=sa;Password=Admin@12345;TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      - sqlserver
+      - redis
+    restart: unless-stopped
